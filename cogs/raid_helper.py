@@ -8,7 +8,7 @@ class RaidHelper(commands.Cog):
         # Stocke les raids en mémoire : raid_name -> set of user IDs
         self.raids = {}
 
-    @app_commands.command(name="creer_raid", description="Créer un raid avec un nom et une limite de joueurs")
+    @app_commands.command(name="create_raid", description="Créer un raid avec un nom et une limite de joueurs")
     @app_commands.describe(nom="Nom du raid", limite="Nombre maximum de joueurs")
     async def creer_raid(self, interaction: discord.Interaction, nom: str, limite: int):
         if nom in self.raids:
@@ -21,7 +21,7 @@ class RaidHelper(commands.Cog):
         self.raids[nom] = {"limite": limite, "joueurs": set()}
         await interaction.response.send_message(f"Raid '{nom}' créé avec une limite de {limite} joueurs.")
 
-    @app_commands.command(name="rejoindre_raid", description="Rejoindre un raid existant")
+    @app_commands.command(name="join_raid", description="Rejoindre un raid existant")
     @app_commands.describe(nom="Nom du raid à rejoindre")
     async def rejoindre_raid(self, interaction: discord.Interaction, nom: str):
         raid = self.raids.get(nom)
@@ -40,7 +40,7 @@ class RaidHelper(commands.Cog):
         raid["joueurs"].add(interaction.user.id)
         await interaction.response.send_message(f"{interaction.user.display_name} a rejoint le raid '{nom}' !")
 
-    @app_commands.command(name="liste_raid", description="Afficher la liste des joueurs d'un raid")
+    @app_commands.command(name="list_raid", description="Afficher la liste des joueurs d'un raid")
     @app_commands.describe(nom="Nom du raid")
     async def liste_raid(self, interaction: discord.Interaction, nom: str):
         raid = self.raids.get(nom)
@@ -59,7 +59,7 @@ class RaidHelper(commands.Cog):
 
         await interaction.response.send_message(f"Participants au raid '{nom}' ({len(membres)}/{raid['limite']}):\n" + "\n".join(membres))
 
-    @app_commands.command(name="supprimer_raid", description="Supprimer un raid")
+    @app_commands.command(name="delete_raid", description="Supprimer un raid")
     @app_commands.describe(nom="Nom du raid à supprimer")
     async def supprimer_raid(self, interaction: discord.Interaction, nom: str):
         if nom not in self.raids:
@@ -69,7 +69,7 @@ class RaidHelper(commands.Cog):
         del self.raids[nom]
         await interaction.response.send_message(f"Le raid '{nom}' a été supprimé.")
     
-    @app_commands.command(name="raid_actif", description="Afficher tous les raids actifs")
+    @app_commands.command(name="actif_raid", description="Afficher tous les raids actifs")
     async def liste_raids(self, interaction: discord.Interaction):
         if not self.raids:
             await interaction.response.send_message("Il n'y a aucun raid actif pour le moment.")
