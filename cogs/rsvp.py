@@ -4,7 +4,10 @@ from discord import app_commands
 import json
 import os
 
-DATA_FILE = "rsvp_data.json"
+import asyncio
+from datetime import datetime, timezone, timedelta
+
+DATA_FILE = "json/rsvp_data.json"
 
 def load_data():
     if os.path.isfile(DATA_FILE):
@@ -76,6 +79,75 @@ class EventRSVP(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.data = load_data()
+        self.bg_task = self.bot.loop.create_task(self.reminder_task())
+
+    async def reminder_task(self):
+        await self.bot.wait_until_ready()
+        while not self.bot.is_closed():
+            now = datetime.now(timezone.utc)
+            # Pour chaque serveur/guild
+            for guild_id, events in self.data.items():
+                guild = self.bot.get_guild(int(guild_id))
+                if guild is None:
+                    continue
+                # Récupérer les événements officiels à jour
+                try:
+                    scheduled_events = await guild.fetch_scheduled_events()
+                except Exception:
+                    continue
+                for event_id_str, participants in events.items():
+                    event = discord.utils.get(scheduled_events, id=int(event_id_str))
+                    if event is None:
+                        continue
+                    # Calcul du temps restant avant l'événement
+                    delta = event.start_time - now
+                    if timedelta(minutes=59) < delta <= timedelta(hours=1, minutes=1):
+                        # Envoi du rappel 1 heure avant (environ)
+                        for user_id in participants.get("yes", []):
+                            user = self.bot.get_user(int(user_id))
+                            if user:
+                                try:
+                                    await user.send(f"🔔 Rappel : l'événement **{event.name}** commence dans environ 1 heure !")
+                                except Exception:
+                                    pass
+            await asyncio.sleep(60)  # On vérifie toutes les 60 secondes
+        
+    @app_commands.command(name="send_reminder", description="Envoie un rappel DM immédiat aux participants d'un événement")
+    @app_commands.describe(event_id="L'ID de l'événement Discord")
+    async def send_reminder(self, interaction: discord.Interaction, event_id: str):
+        await interaction.response.defer(ephemeral=True)
+        guild_id = str(interaction.guild.id)
+        guild_data = self.data.get(guild_id, {})
+        event_data = guild_data.get(event_id)
+
+        if event_data is None:
+            await interaction.followup.send("Aucun RSVP trouvé pour cet événement.", ephemeral=True)
+            return
+
+        guild = interaction.guild
+        event = None
+        try:
+            events = await guild.fetch_scheduled_events()
+            event = discord.utils.get(events, id=int(event_id))
+        except Exception:
+            pass
+
+        if event is None:
+            await interaction.followup.send("Événement introuvable.", ephemeral=True)
+            return
+
+        sent_count = 0
+        failed_count = 0
+        for user_id in event_data.get("yes", []):
+            user = self.bot.get_user(int(user_id))
+            if user:
+                try:
+                    await user.send(f"🔔 Rappel TEST : l'événement **{event.name}** commence bientôt !")
+                    sent_count += 1
+                except Exception:
+                    failed_count += 1
+
+        await interaction.followup.send(f"Rappel envoyé à {sent_count} participant(s). Échecs : {failed_count}.", ephemeral=True)
 
     @app_commands.command(name="rsvp_event", description="Créer un message RSVP lié à un événement Discord")
     async def rsvp_event(self, interaction: discord.Interaction):
