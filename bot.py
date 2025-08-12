@@ -35,7 +35,7 @@ async def setup_hook():
     await bot.tree.sync()
 
 #keep alive the server
-#keepAlive.keep_alive()
+keepAlive.keep_alive()
 
 # Démarrage du bot
 bot.run(os.getenv("DISCORD_TOKEN"))
