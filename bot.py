@@ -11,7 +11,8 @@ intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 EXTENSIONS = [
-    "cogs.native_events"
+    "cogs.events",
+    "cogs.rsvp"
 ]
 
 # Démarage du bot (quand le bot est pret)
