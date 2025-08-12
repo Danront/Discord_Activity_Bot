@@ -12,7 +12,8 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 EXTENSIONS = [
     "cogs.events",
-    "cogs.rsvp"
+    "cogs.rsvp",
+    "cogs.raid_helper"
 ]
 
 # Démarage du bot (quand le bot est pret)
